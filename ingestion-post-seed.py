@@ -5,6 +5,7 @@ from conn import get_db_connection
 conn = get_db_connection()
 cur = conn.cursor()
 
+
 consumer = KafkaConsumer(
     'ingestion-pipeline_instagram_mobile_raw',
     bootstrap_servers=[
@@ -14,18 +15,18 @@ consumer = KafkaConsumer(
     ],
     auto_offset_reset='latest',
     enable_auto_commit=False,
-    group_id='ingestion-pipeline',
+    group_id='ingestion-instagram-mobile',
     value_deserializer=lambda x: json.loads(x.decode('utf-8'))
 )
 
 buffer_data = [] 
-batch_size = 10  
+batch_size = 10 
 
-print(f"--- Menunggu data (Batch Size: {batch_size}) ---")
+print(f"--- Waiting for data (Batch Size: {batch_size}) ---")
 
 try:
     for message in consumer:
-        print(message)
+        print(message.value)
         # location = message.value
         
         # data_tuple = (
@@ -35,9 +36,9 @@ try:
         #     location['timestamp'],
         #     'Pending'
         # )
-        buffer_data.append(message)
+        # buffer_data.append(message)
         
-        print(f"Buffer: {len(buffer_data)}/{batch_size}", end='\r')
+        # print(f"Buffer: {len(buffer_data)}/{batch_size}", end='\r')
 
         # if len(buffer_data) >= batch_size:
         #     query = "INSERT INTO driver (driver_id, latitude, longitude, timestamp, status) VALUES (?, ?, ?, ?, ?)"
