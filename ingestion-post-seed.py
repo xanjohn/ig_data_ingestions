@@ -26,7 +26,34 @@ print(f"--- Waiting for data (Batch Size: {batch_size}) ---")
 
 try:
     for message in consumer:
-        print(message.value)
+        # print(message.value)
+        data = message.value
+        sections = data.get('raw', {}).get('media_grid', {}).get('sections', [])
+        
+        for section in sections:
+            layout_content = section.get('layout_content', {})
+            
+            media_items = []
+            
+            if 'one_by_two_item' in layout_content:
+                clips = layout_content['one_by_two_item'].get('clips', {}).get('items', [])
+                media_items.extend(clips)
+            
+            if 'fill_items' in layout_content:
+                media_items.extend(layout_content['fill_items'])
+                
+            for item in media_items:
+                media = item.get('media', {})
+                if not media:
+                    continue
+                    
+                info = {
+                    'id_konten': media.get('id'),
+                    'pk': media.get('pk'),
+                    'taken_at': media.get('taken_at'),
+                    'organic_tracking_token': media.get('organic_tracking_token')
+                }
+                print(info)
         # location = message.value
         
         # data_tuple = (
