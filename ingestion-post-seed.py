@@ -1,9 +1,9 @@
 from kafka import KafkaConsumer
 import json
-from conn import get_db_connection
+# from conn import get_db_connection
 
-conn = get_db_connection()
-cur = conn.cursor()
+# conn = get_db_connection()
+# cur = conn.cursor()
 
 
 consumer = KafkaConsumer(
