@@ -10,7 +10,12 @@ with open('ig-raw.json', 'r', encoding='utf-8') as f:
 
 #Kafka Producer
 producer = KafkaProducer(
-    bootstrap_servers = ['localhost:9092'],
+    'ingestion-pipeline_instagram_mobile_raw',
+    bootstrap_servers=[
+        '10.27.10.29:9092', 
+        '10.27.10.43:9092', 
+        '10.27.10.145:9092'
+    ],
     value_serializer=lambda v: json.dumps(v).encode('utf-8')
 )
 
