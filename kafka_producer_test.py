@@ -10,7 +10,6 @@ with open('ig-raw.json', 'r', encoding='utf-8') as f:
 
 #Kafka Producer
 producer = KafkaProducer(
-    'ingestion-pipeline_instagram_mobile_raw',
     bootstrap_servers=[
         '10.27.10.29:9092', 
         '10.27.10.43:9092', 
@@ -27,7 +26,7 @@ def send_location_updates():
         #     "longitude": round(random.uniform(-74.0, -73.0), 6),
         #     "timestamp": time.time()
         # }
-        producer.send('ingestion-ig', data)
+        producer.send('ingestion-pipeline_instagram_mobile_raw', data)
         print(f"Sent: {data}")
         time.sleep(10)
 
