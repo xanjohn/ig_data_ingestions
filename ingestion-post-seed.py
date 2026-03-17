@@ -46,17 +46,22 @@ try:
                 media = item.get('media', {})
                 if not media:
                     continue
-                    
+                
+                #Microsecond
+                device_timestamp = datetime.fromtimestamp(float(media.get('device_timestamp')) / 1000000).strftime('%Y-%m-%d %H:%M:%S')
+                
+                #Seconds
+                created_at = datetime.fromtimestamp(float(media.get('taken_at'))).strftime('%Y-%m-%d %H:%M:%S')
+                edited_at = datetime.fromtimestamp(float(media.get('edited_at'))) .strftime('%Y-%m-%d %H:%M:%S') if media.get('edited_at') else None
                 data_tuple = (
                     str(media.get('pk')),
                     'instagram',
-                    media.get('id'),
-                    media.get('device_timestamp'),
-                    media.get('taken_at'),
-                    media.get('edited_at'), # Akan jadi NULL jika tidak ada
+                    media.get('code'),
+                    device_timestamp,
+                    created_at,                    
+                    edited_at,
                     'pending',
                     None,
-                    media.get('code')
                 )
                 buffer_data.append(data_tuple)
                 
@@ -65,7 +70,7 @@ try:
                 if len(buffer_data) >= batch_size:
                     query = """
                         INSERT INTO post_link_seeds 
-                        (original_id, social_media, alternative_original_id, timestamp, created_at, updated_at, status, error, shortcode) 
+                        (original_id, social_media, alternative_original_id, timestamp, created_at, updated_at, status, error) 
                         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
                         ON DUPLICATE KEY UPDATE updated_at = VALUES(updated_at)
                     """
