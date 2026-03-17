@@ -1,22 +1,25 @@
-import mariadb
-import sys
+import mysql.connector
+from mysql.connector import pooling
 
 pool_config = {
         'user' : 'admin',
         'password': 'MainNoLimitrac98ss',
-        'host' : 'localhost',
+        'host' : '103.191.17.67',
         'port' : 3306,
-        'database' : 'instagram_users',
-        'pool_name' : 'ig_ingestion_pool',
-        'pool_size': 5
+        'database' : 'instagram_users'
     }
 
 try:
-    pool_conn = mariadb.ConnectionPool(**pool_config)
+    pool_conn = mysql.connector.pooling.MySQLConnectionPool(
+        pool_name='ig_ingestion_pool',
+        pool_size=5,
+        **pool_config
+    )
     print("Connection Pool Succesfully Created")
 
-except mariadb.Error as e:
+except mysql.connector.Error as e:
     print(f"Error creating connection pool: {e}")
+    sys.exit(1)
 
 def get_db_connection():
     try:
