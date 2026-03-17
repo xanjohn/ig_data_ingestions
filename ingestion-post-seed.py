@@ -1,7 +1,7 @@
 from kafka import KafkaConsumer
 import json
 from conn import get_db_connection
-import datetime
+from datetime import datetime
 
 conn = get_db_connection()
 cur = conn.cursor()
