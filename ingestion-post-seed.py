@@ -3,6 +3,24 @@ import json
 from conn import get_db_connection
 from datetime import datetime
 
+
+def convert_timestamp(ts):
+    if ts is None or ts == 0 or ts == "":
+        return None
+    
+    try:
+        ts_str = str(ts)
+        if len(ts_str) > 10:
+            divisor = 10**(len(ts_str) - 10)
+            ts_float = float(ts) / divisor
+        else:
+            ts_float = float(ts)
+            
+        return datetime.fromtimestamp(ts_float).strftime('%Y-%m-%d %H:%M:%S')
+    except Exception as e:
+        return None
+
+
 conn = get_db_connection()
 cur = conn.cursor()
 
@@ -58,9 +76,9 @@ try:
                     str(media.get('pk')),
                     'instagram',
                     media.get('code'),
-                    device_timestamp,
-                    created_at,                    
-                    edited_at,
+                    format_ig_timestamp(media.get('device_timestamp')), 
+                    format_ig_timestamp(media.get('taken_at')),
+                    format_ig_timestamp(media.get('edited_at')),
                     'pending',
                     None,
                 )
