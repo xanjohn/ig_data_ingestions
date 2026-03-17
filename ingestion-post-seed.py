@@ -1,9 +1,9 @@
 from kafka import KafkaConsumer
 import json
-# from conn import get_db_connection
+from conn import get_db_connection
 
-# conn = get_db_connection()
-# cur = conn.cursor()
+conn = get_db_connection()
+cur = conn.cursor()
 
 
 consumer = KafkaConsumer(
@@ -47,39 +47,39 @@ try:
                 if not media:
                     continue
                     
-                info = {
-                    'id_konten': media.get('id'),
-                    'pk': media.get('pk'),
-                    'taken_at': media.get('taken_at'),
-                    'organic_tracking_token': media.get('organic_tracking_token')
-                }
-                print(info)
-        # location = message.value
-        
-        # data_tuple = (
-        #     location['driver_id'], 
-        #     location['latitude'], 
-        #     location['longitude'], 
-        #     location['timestamp'],
-        #     'Pending'
-        # )
-        # buffer_data.append(message)
-        
-        # print(f"Buffer: {len(buffer_data)}/{batch_size}", end='\r')
-
-        # if len(buffer_data) >= batch_size:
-        #     query = "INSERT INTO driver (driver_id, latitude, longitude, timestamp, status) VALUES (?, ?, ?, ?, ?)"
-        #     cur.executemany(query, buffer_data)
-        #     conn.commit()
-        #     consumer.commit()
-        #     print(f"\n[SUCCESS] Berhasil bulk insert {batch_size} data!")
-        #     buffer_data = []
+                data_tuple = (
+                    str(media.get('pk')),
+                    'instagram',
+                    media.get('id'),
+                    media.get('device_timestamp'),
+                    media.get('taken_at'),
+                    media.get('edited_at'), # Akan jadi NULL jika tidak ada
+                    'pending',
+                    None,
+                    media.get('code')
+                )
+                buffer_data.append(data_tuple)
+                
+                print(f"Buffer: {len(buffer_data)}/{batch_size}", end='\r')
+                
+                if len(buffer_data) >= batch_size:
+                    query = """
+                        INSERT INTO post_link_seeds 
+                        (original_id, social_media, alternative_original_id, timestamp, created_at, updated_at, status, error, shortcode) 
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                        ON DUPLICATE KEY UPDATE updated_at = VALUES(updated_at)
+                    """
+                    cur.executemany(query, buffer_data)
+                    conn.commit()
+                    consumer.commit()
+                    print(f"\n Success inserting {len(buffer_data)} data!")
+                    buffer_data = []
 
 except KeyboardInterrupt:
     print("\nStopping...")
     if buffer_data:
-        # cur.executemany(query, buffer_data)
-        # conn.commit()
+        cur.executemany(query, buffer_data)
+        conn.commit()
         consumer.commit()
 finally:
     cur.close()

@@ -25,7 +25,9 @@ def get_db_connection():
     try:
         conn = pool_conn.get_connection()
         return conn
-    except mariadb.Error as e:
+    except mysql.connector.Error as e:
         print(f"Error connecting to MariaDB: {e}")
         return None
+
+
 
