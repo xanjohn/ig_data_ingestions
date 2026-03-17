@@ -1,11 +1,12 @@
 import mysql.connector
 from mysql.connector import pooling
+import sys
 
 pool_config = {
         'user' : 'admin',
         'password': 'MainNoLimitrac98ss',
-        'host' : '103.191.17.67',
-        'port' : 3306,
+        'host' : 'localhost',
+        'port' : 3308,
         'database' : 'instagram_users'
     }
 
