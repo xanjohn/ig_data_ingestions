@@ -72,7 +72,7 @@ try:
                     query = """
                         INSERT INTO post_link_seeds 
                         (original_id, social_media, alternative_original_id, timestamp, created_at, updated_at, status, error) 
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
                         ON DUPLICATE KEY UPDATE updated_at = VALUES(updated_at)
                     """
                     cur.executemany(query, buffer_data)
