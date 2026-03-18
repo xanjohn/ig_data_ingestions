@@ -3,7 +3,14 @@ import time
 from datetime import datetime
 from conn import get_db_connection
 
-def process_batch():
+def get_args():
+    parser = argparse.ArgumentParser(description='Worker Lookup to API and push to Kafka')
+    parser.add_argument('--topic_out', type=str, required=True, help='Topic Kafka (Output)')
+    parser.add_argument('--batch', type=int, default=10, help='Batch from DB')
+    return parser.parse_args()
+
+
+def process_batch(args, producer):
     conn = get_db_connection()
     if not conn: return
     cur = conn.cursor()
@@ -42,13 +49,23 @@ def process_batch():
                     
                     json_data = response.json()
                     
-                    if json_data.get('status') == 'ok':
-                        data_content = json_data.get('data')
-                        if not data_content or data_content == []:
-                            final_status = 'error'
-                            error_message = 'empty data'
-                        else:
-                            final_status = 'success'
+                    if json_data.get('status') == 'ok' and json_data.get('data'):
+                        
+                        raw_content = json_data.get('data')
+                        media_info = raw_content.get('xdt_shortcode_media',{})
+                        owner_info = media_info.get('owner', {})
+                        
+                        enriched_data = {
+                            "raw": json_data,
+                            "metadata": {
+                                "crawltime": int(time.time()),
+                                "account_id": owner_info.get('id'),
+                                "account": owner_info.get('username')
+                            }
+                        }
+                        
+                        producer.send(args.topic_out, value=enriched_data)
+                        final_status = 'success'
                     else:
                         final_status = 'error'
                         error_message = 'status not ok'
@@ -70,6 +87,7 @@ def process_batch():
             print(f"-> {shortcode}: {final_status} ({error_message})")
 
         conn.commit()
+        producer.flush()
 
     except Exception as e:
         print(f"Database Error: {e}")
@@ -79,6 +97,14 @@ def process_batch():
         conn.close()
 
 if __name__ == "__main__":
+    args = get_args()
+    
+    producer = KafkaProducer(
+        bootstrap_servers=['10.27.10.29:9092', '10.27.10.43:9092', '10.27.10.145:9092'],
+        value_serializer=lambda v: json.dumps(v).encode('utf-8')
+    )
+    print(f"Worker Lookup Started. Output Topic: {args.topic_out}")
+    
     while True:
-        process_batch()
+        process_batch(args, producer)
         time.sleep(5)
