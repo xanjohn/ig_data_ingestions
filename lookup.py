@@ -1,5 +1,6 @@
 import requests
 import time
+from datetime import datetime
 from conn import get_db_connection
 
 def process_batch():
@@ -8,34 +9,65 @@ def process_batch():
     cur = conn.cursor()
 
     try:
-        cur.execute("SELECT id FROM driver WHERE status = 'Pending' LIMIT 10")
+        cur.execute("SELECT alternative_original_id FROM post_link_seeds WHERE status = 'Pending' LIMIT 10")
         rows = cur.fetchall()
 
         if not rows:
-            print("Tidak ada data pending. Menunggu...")
+            print("Waiting for data...")
             return
 
-        target_ids = [row[0] for row in rows]
+        target_shortcode = [row[0] for row in rows]
         
-        format_strings = ','.join(['?'] * len(target_ids)) # Buat "?,?,?,..."
-        cur.execute(f"UPDATE driver SET status = 'Running' WHERE id IN ({format_strings})", target_ids)
+        format_strings = ','.join(['%s'] * len(target_shortcode)) # %s
+        update_running_query = f"""
+        UPDATE post_link_seeds
+        SET status = 'running', updated_at = NOW()
+        WHERE alternative_original_id IN ({format_strings})
+        """
+        cur.execute(update_running_query, target_shortcode)
         conn.commit()
-        print(f"Sedang memproses {len(target_ids)} data...")
+        print(f"Processing {len(target_shortcode)} Shortcode...")
 
-        endpoint = "https://httpbin.org/post" #Dummy
-        try:
-            response = requests.post(endpoint, json={"processed_ids": target_ids}, timeout=10)
-            
-            if response.status_code == 200:
-                cur.execute(f"UPDATE driver SET status = 'Success' WHERE id IN ({format_strings})", target_ids)
-                print("[OK] API Success! Status updated to Success.")
-            else:
-                cur.execute(f"UPDATE driver SET status = 'Error' WHERE id IN ({format_strings})", target_ids)
-                print(f"[FAIL] API returned {response.status_code}. Status updated to Error.")
+        endpoint = "http://103.191.17.93:9779/get-instagram-post"
         
-        except Exception as e:
-            cur.execute(f"UPDATE driver SET status = 'Error' WHERE id IN ({format_strings})", target_ids)
-            print(f"[FAIL] Network Error: {e}. Status updated to Error.")
+        for shortcode in target_shortcode:
+            payloads = {'shortcode': shortcode}
+            final_status = 'error'
+            error_message = None
+            
+            try:
+                response = requests.get(endpoint, params=payloads, timeout=10)
+                
+                if response.status_code == 200:
+                    
+                    json_data = response.json()
+                    
+                    if json_data.get('status') == 'ok':
+                        data_content = json_data.get('data')
+                        if not data_content or data_content == []:
+                            final_status = 'error'
+                            error_message = 'empty data'
+                        else:
+                            final_status = 'success'
+                    else:
+                        final_status = 'error'
+                        error_message = 'status not ok'
+                        
+                else:
+                    final_status = 'error'
+                    error_message = f'error {response.status_code}'
+            except Exception as e:
+                final_status = 'error'
+                error_message = f"error network timeout"
+            
+            update_final_query = """
+            UPDATE post_link_seeds
+            SET status = %s, error = %s, updated_at = NOW()
+            WHERE alternative_original_id = %s
+            """
+            
+            cur.execute(update_final_query, (final_status, error_message, shortcode))
+            print(f"-> {shortcode}: {final_status} ({error_message if error_message else 'OK'})")
 
         conn.commit()
 
