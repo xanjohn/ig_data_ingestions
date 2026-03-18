@@ -9,7 +9,7 @@ def process_batch():
     cur = conn.cursor()
 
     try:
-        cur.execute("SELECT alternative_original_id FROM post_link_seeds WHERE status = 'Pending' LIMIT 10")
+        cur.execute("SELECT alternative_original_id FROM post_link_seeds WHERE status = 'pending' LIMIT 10")
         rows = cur.fetchall()
 
         if not rows:
@@ -36,7 +36,7 @@ def process_batch():
             error_message = None
             
             try:
-                response = requests.get(endpoint, params=payloads, timeout=10)
+                response = requests.get(endpoint, params=payloads, timeout=15)
                 
                 if response.status_code == 200:
                     
@@ -67,7 +67,7 @@ def process_batch():
             """
             
             cur.execute(update_final_query, (final_status, error_message, shortcode))
-            print(f"-> {shortcode}: {final_status} ({error_message if error_message else 'OK'})")
+            print(f"-> {shortcode}: {final_status} ({error_message})")
 
         conn.commit()
 
